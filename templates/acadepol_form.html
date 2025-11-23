@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Publicação - ACADEPOL{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white">Publicar no Portal</h2>
+        <p class="text-slate-400 mt-1">Esta informação ficará visível para o público externo.</p>
+    </div>
+
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-xl">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Título da Publicação</label>
+                <input type="text" name="titulo" required placeholder="Ex: Edital Concurso Investigador 2025" 
+                       class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Categoria</label>
+                <select name="categoria" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                    <option value="Concurso">Concurso Público</option>
+                    <option value="Resultado">Resultado de Prova</option>
+                    <option value="Curso">Curso de Formação</option>
+                    <option value="Aviso">Aviso Geral / Notícia</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Conteúdo / Descrição</label>
+                <textarea name="conteudo" rows="6" required placeholder="Detalhes sobre o edital, datas importantes, links externos, etc..." 
+                          class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Anexar Documento (PDF/Imagem)</label>
+                <input type="file" name="anexo" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-900/30 file:text-blue-400 hover:file:bg-blue-900/50 cursor-pointer bg-slate-900 rounded-lg border border-slate-600">
+            </div>
+
+            <div class="flex justify-end pt-4 gap-4">
+                <a href="{{ url_for('acadepol_admin') }}" class="px-4 py-2 text-slate-400 hover:text-white">Cancelar</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
+                    Publicar Agora
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

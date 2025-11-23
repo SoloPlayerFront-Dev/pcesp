@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Controle de Armaria{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <!-- Cabeçalho -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-white">Diretoria De Logística</h2>
+            <p class="text-slate-400 text-sm mt-1">Gestão de patrimônio bélico e cadeia de custódia de evidências.</p>
+        </div>
+        
+        <div class="flex gap-3">
+            <a href="{{ url_for('cadastrar_arma') }}" class="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all transform hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                Novo Item
+            </a>
+        </div>
+    </div>
+
+    <!-- Abas de Filtro -->
+    <div class="flex gap-4 mb-6 border-b border-slate-700 pb-1">
+        <a href="{{ url_for('armaria') }}" class="px-4 py-2 text-sm font-medium {{ 'text-white border-b-2 border-slate-400' if not filtro_atual else 'text-slate-400 hover:text-white' }}">Todos</a>
+        <a href="{{ url_for('armaria', acervo='Patrimonio') }}" class="px-4 py-2 text-sm font-medium {{ 'text-blue-400 border-b-2 border-blue-400' if filtro_atual == 'Patrimonio' else 'text-slate-400 hover:text-blue-300' }}">Patrimônio (Polícia)</a>
+        <a href="{{ url_for('armaria', acervo='Evidencia') }}" class="px-4 py-2 text-sm font-medium {{ 'text-red-400 border-b-2 border-red-400' if filtro_atual == 'Evidencia' else 'text-slate-400 hover:text-red-300' }}">Evidências (Apreensões)</a>
+    </div>
+
+    <!-- Tabela -->
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase tracking-wider text-slate-400">
+                        <th class="px-6 py-4 font-semibold">Item / Modelo</th>
+                        <th class="px-6 py-4 font-semibold">Nº Série</th>
+                        <th class="px-6 py-4 font-semibold">Situação</th>
+                        <th class="px-6 py-4 font-semibold">Localização Atual</th>
+                        <th class="px-6 py-4 font-semibold text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+                    {% for arma in armas %}
+                    <tr class="hover:bg-slate-700/30 transition-colors group">
+                        
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-white font-medium">{{ arma.tipo }} - {{ arma.modelo }}</span>
+                                <span class="text-xs text-slate-500">{{ arma.marca }} ({{ arma.calibre }})</span>
+                                
+                                <!-- VINCULOS -->
+                                {% if arma.acervo == 'Evidencia' %}
+                                    {% if arma.boletim_id %}
+                                        <span class="text-[10px] text-blue-400 mt-1">Vinculado ao B.O #{{ arma.boletim_id }}</span>
+                                    {% elif arma.auto_prisao_id %}
+                                        <span class="text-[10px] text-red-400 mt-1">Vinculado ao Auto #{{ arma.auto_prisao_id }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 font-mono text-slate-300 text-sm">
+                            {{ arma.numero_serie }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {% if arma.status == 'Disponivel' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Disponível</span>
+                            {% elif arma.status == 'Em Uso' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Em Uso (Cautela)</span>
+                            {% elif arma.status == 'Custodia' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">Em Custódia</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">{{ arma.status }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 text-sm text-slate-400">
+                            {{ arma.localizacao_atual }}
+                        </td>
+
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ url_for('movimentar_arma', id=arma.id) }}" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded border border-slate-600 transition-colors">
+                                    Movimentar
+                                </a>
+                                <a href="{{ url_for('historico_arma', id=arma.id) }}" class="text-slate-500 hover:text-blue-400 p-1" title="Ver Histórico">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                            Nenhum item encontrado neste acervo.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

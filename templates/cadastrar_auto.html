@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Auto de Prisão - APFD{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+    <!-- Cabeçalho -->
+    <div class="mb-8 text-center md:text-left">
+        <h2 class="text-3xl font-bold text-white">Auto de Prisão em Flagrante</h2>
+        <p class="text-slate-400 mt-1">Formalização de captura e qualificação do conduzido.</p>
+    </div>
+
+    <!-- Card do Formulário -->
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-sm p-6 md:p-8">
+        
+        <form method="POST" class="space-y-6">
+            
+            <!-- Linha 1: Dados do Preso -->
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Nome do Indiciado / Preso
+                </label>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <!-- Ícone de Usuário Detido (Cadeado/User) -->
+                        <svg class="h-5 w-5 text-slate-500 group-focus-within:text-red-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <input type="text" 
+                           name="preso" 
+                           required
+                           value="{{ auto.preso if auto else '' }}"
+                           placeholder="Nome completo do conduzido"
+                           class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors">
+                </div>
+            </div>
+
+            <!-- Linha 2: Testemunhas -->
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Testemunhas / Condutores
+                </label>
+                <div class="relative group">
+                    <div class="absolute top-3 left-3 flex items-start pointer-events-none">
+                        <!-- Ícone Grupo -->
+                        <svg class="h-5 w-5 text-slate-500 group-focus-within:text-red-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <textarea name="testemunhas" 
+                              rows="2" 
+                              placeholder="Liste os nomes das testemunhas e condutores da ocorrência..."
+                              class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors">{{ auto.testemunhas if auto else '' }}</textarea>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1 ml-1">Separe os nomes por vírgula.</p>
+            </div>
+
+            <!-- Linha 3: Natureza e Fato -->
+            <div class="space-y-4">
+                
+                <!-- SELECT CRIMES (NOVO) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Enquadramento Legal (Crime)
+                    </label>
+                    <div class="relative">
+                        <select name="natureza_crime" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-red-500 focus:outline-none appearance-none">
+                            <option value="" class="text-slate-500">Selecione o motivo da prisão...</option>
+                            {% for crime in crimes %}
+                                <option value="{{ crime.nome }} ({{ crime.artigo }})">{{ crime.nome }} - {{ crime.artigo }}</option>
+                            {% else %}
+                                <option disabled class="bg-slate-800 text-red-400">Nenhum crime cadastrado</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        Histórico da Prisão (Fato)
+                    </label>
+                    <div class="relative">
+                        <textarea name="descricao" 
+                                  rows="6" 
+                                  required
+                                  placeholder="Descreva as circunstâncias da prisão, local, hora e materiais apreendidos..."
+                                  class="w-full p-4 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors resize-y">{{ auto.descricao_fato if auto else '' }}</textarea>
+                    </div>
+                    <!-- Aviso de Importância -->
+                    <div class="mt-2 p-3 bg-red-900/20 border border-red-900/50 rounded-lg flex items-start gap-2">
+                        <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <p class="text-xs text-red-200/80">Certifique-se de que todos os detalhes legais para a homologação do flagrante estejam descritos acima.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE APREENSÕES (Apenas na edição) -->
+            {% if auto %}
+            <div class="border-t border-slate-700 pt-6 mt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-white">Material Vinculado ao Flagrante</h3>
+                    <a href="{{ url_for('cadastrar_arma', auto_id=auto.id) }}" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded border border-slate-600 transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Adicionar Item
+                    </a>
+                </div>
+
+                {% if auto.itens_apreendidos %}
+                <div class="grid grid-cols-1 gap-3">
+                    {% for item in auto.itens_apreendidos %}
+                    <div class="flex items-center justify-between p-3 bg-slate-900 rounded-lg border border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-red-900/20 rounded text-red-400">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">{{ item.tipo }} - {{ item.modelo }}</p>
+                                <p class="text-xs text-slate-500">{{ item.calibre }} | {{ item.numero_serie or 'S/N' }}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">{{ item.status }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-500 italic">Nenhum material vinculado a este auto.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Botões de Ação -->
+            <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-700/50">
+                <a href="{{ url_for('autos') }}" class="text-sm font-medium text-slate-400 hover:text-white transition-colors px-4 py-2">
+                    Cancelar
+                </a>
+                <!-- Botão Vermelho (Tema Prisão) -->
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-red-600/20 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {{ 'Salvar Alterações' if auto else 'Registrar Prisão' }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

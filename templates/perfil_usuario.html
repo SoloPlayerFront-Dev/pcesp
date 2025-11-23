@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Dossiê Funcional - {{ usuario.nome }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+    <!-- Topo com Ações -->
+    <div class="flex justify-between items-center mb-6">
+        <a href="{{ url_for('gerenciar_membros') }}" class="text-slate-400 hover:text-white flex items-center gap-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Voltar para Lista
+        </a>
+        <a href="{{ url_for('editar_membro', id=usuario.id) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Editar Dados
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Coluna Esquerda: Cartão de Identidade -->
+        <div class="space-y-6">
+            <!-- Card Principal -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
+                <div class="h-32 bg-gradient-to-r from-slate-900 to-slate-800 relative">
+                    <div class="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+                        <div class="h-32 w-32 rounded-full border-4 border-slate-800 overflow-hidden bg-slate-700">
+                            {% if usuario.foto_perfil %}
+                                <img src="{{ url_for('static', filename='fotos_perfil/' + usuario.foto_perfil) }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-500">
+                                    {{ usuario.nome[:2].upper() }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-20 pb-8 px-6 text-center">
+                    <h1 class="text-2xl font-bold text-white">{{ usuario.nome }}</h1>
+                    <p class="text-emerald-400 font-medium uppercase tracking-wide text-sm mt-1">{{ usuario.cargo }}</p>
+                    <p class="text-slate-500 text-xs mt-2 font-mono">MATRÍCULA: {{ usuario.matricula }}</p>
+                    
+                    <div class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-700 pt-6">
+                        <div>
+                            <p class="text-xs text-slate-500 uppercase">Delegacia</p>
+                            <p class="text-white text-sm font-semibold">{{ usuario.delegacia or 'Não lotado' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 uppercase">Departamento</p>
+                            <p class="text-white text-sm font-semibold">{{ usuario.departamento or 'Geral' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados Pessoais (Restrito) -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.622-1 2.241M13 3.414l.001-.002"></path></svg>
+                    Dados Pessoais
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase">Endereço Residencial</p>
+                        <p class="text-slate-300 text-sm">{{ usuario.endereco or 'Não informado' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase">Data de Cadastro</p>
+                        <p class="text-slate-300 text-sm">{{ usuario.criado_em.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Histórico e Notas -->
+        <div class="lg:col-span-2 space-y-8">
+            
+            <!-- Seção de Observações -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Observações Administrativas
+                </h3>
+                <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 min-h-[100px]">
+                    <p class="text-slate-300 text-sm italic whitespace-pre-line">{{ usuario.observacoes or 'Nenhuma observação registrada na ficha funcional.' }}</p>
+                </div>
+            </div>
+
+            <!-- Histórico de Promoções (Timeline) -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Registro de Promoções
+                    </h3>
+                    
+                    <!-- Botão Modal para Promover -->
+                    <button onclick="document.getElementById('modalPromocao').classList.remove('hidden')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded transition-colors">
+                        Registrar Promoção
+                    </button>
+                </div>
+
+                <div class="border-l-2 border-slate-700 ml-3 space-y-8">
+                    {% for promo in promocoes %}
+                    <div class="relative pl-8">
+                        <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-emerald-500 border-4 border-slate-800"></span>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                            <div>
+                                <h4 class="text-white font-bold text-lg">{{ promo.novo_cargo }}</h4>
+                                <p class="text-slate-400 text-sm">Cargo anterior: {{ promo.cargo_anterior }}</p>
+                                <p class="text-emerald-400/80 text-xs mt-1 uppercase tracking-wide">{{ promo.motivo }}</p>
+                            </div>
+                            <span class="text-xs text-slate-500 font-mono mt-1 sm:mt-0">{{ promo.data_promocao.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="pl-8 text-slate-500 text-sm">Nenhum histórico de promoção registrado.</div>
+                    {% endfor %}
+                    
+                    <!-- Marcador de Início -->
+                    <div class="relative pl-8">
+                        <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-slate-600 border-4 border-slate-800"></span>
+                        <h4 class="text-slate-400 font-bold">Admissão na Corporação</h4>
+                        <span class="text-xs text-slate-600 font-mono">{{ usuario.criado_em.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Promoção -->
+<div id="modalPromocao" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4">Registrar Nova Patente</h3>
+        <form action="{{ url_for('adicionar_promocao', id=usuario.id) }}" method="POST">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 uppercase mb-1">Novo Cargo</label>
+                    <input type="text" name="novo_cargo" required class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 uppercase mb-1">Motivo / Tipo</label>
+                    <select name="motivo" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                        <option value="Promoção por Merecimento">Promoção por Merecimento</option>
+                        <option value="Promoção por Antiguidade">Promoção por Antiguidade</option>
+                        <option value="Nomeação de Chefia">Nomeação de Chefia</option>
+                        <option value="Correção Funcional">Correção Funcional</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('modalPromocao').classList.add('hidden')" class="text-slate-400 hover:text-white px-4 py-2">Cancelar</button>
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

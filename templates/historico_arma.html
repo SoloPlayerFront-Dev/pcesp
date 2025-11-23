@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico do Item{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Histórico de Movimentações</h2>
+            <p class="text-slate-400 text-sm mt-1">Rastreabilidade completa do item.</p>
+        </div>
+        <a href="{{ url_for('armaria') }}" class="text-sm text-slate-400 hover:text-white">Voltar</a>
+    </div>
+
+    <!-- Detalhes do Item -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8 flex gap-8">
+        <div>
+            <p class="text-xs text-slate-500 uppercase">Modelo</p>
+            <p class="text-white font-bold">{{ arma.modelo }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 uppercase">Série</p>
+            <p class="text-white font-mono">{{ arma.numero_serie }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 uppercase">Acervo</p>
+            <p class="text-white">{{ arma.acervo }}</p>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="space-y-6 border-l-2 border-slate-700 ml-3 pl-6">
+        {% for log in historico %}
+        <div class="relative">
+            <!-- Bolinha da Timeline -->
+            <span class="absolute -left-[33px] top-1 h-4 w-4 rounded-full border-2 border-slate-900 
+                {{ 'bg-emerald-500' if log.tipo_movimentacao == 'Devolucao' or log.tipo_movimentacao == 'Entrada' else 'bg-amber-500' }}"></span>
+            
+            <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="text-white font-bold">{{ log.tipo_movimentacao }}</h4>
+                        <p class="text-sm text-slate-400">Destino/Origem: <span class="text-white">{{ log.destinatario }}</span></p>
+                    </div>
+                    <span class="text-xs text-slate-500 font-mono">{{ log.data_movimentacao.strftime('%d/%m/%Y %H:%M') }}</span>
+                </div>
+                <p class="text-sm text-slate-300 italic">"{{ log.observacao }}"</p>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-slate-500">Sem histórico registrado.</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

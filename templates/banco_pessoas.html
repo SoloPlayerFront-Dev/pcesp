@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Banco de Dados Civil{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-white">Banco de Dados Civil</h2>
+            <p class="text-slate-400 text-sm mt-1">Gestão de registros e histórico de cidadãos.</p>
+        </div>
+        
+        <div class="flex gap-3 w-full md:w-auto">
+            <!-- FORMULÁRIO DE BUSCA -->
+            <form method="GET" action="{{ url_for('banco_pessoas') }}" class="relative flex-grow md:flex-grow-0">
+                <input type="text" name="q" placeholder="Buscar por nome..." value="{{ request.args.get('q', '') }}"
+                       class="w-full md:w-64 pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-purple-500 focus:outline-none transition-colors">
+                <button type="submit" class="absolute left-3 top-2.5 text-slate-500 hover:text-purple-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+            </form>
+
+            <a href="{{ url_for('cadastrar_pessoa') }}" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:shadow-purple-500/20 transition-all transform hover:-translate-y-0.5 whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                Nova Pessoa
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase tracking-wider text-slate-400">
+                        <th class="px-6 py-4 font-semibold">Identificação</th>
+                        <th class="px-6 py-4 font-semibold">RG / Filiação</th>
+                        <th class="px-6 py-4 font-semibold">Endereço</th>
+                        <th class="px-6 py-4 font-semibold">Antecedentes</th>
+                        <th class="px-6 py-4 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+                    {% for pessoa in pessoas %}
+                    <tr class="hover:bg-slate-700/30 transition-colors group">
+                        
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-purple-400 font-bold text-sm border border-slate-600 mr-3">
+                                    {{ pessoa.nome[:2].upper() }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-white">{{ pessoa.nome }}</div>
+                                    <div class="text-xs text-slate-500">Nasc: {{ pessoa.data_nascimento or 'N/D' }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="inline-flex w-fit px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300 font-mono border border-slate-600 mb-1">
+                                    RG: {{ pessoa.rg }}
+                                </span>
+                                <span class="text-[10px] text-slate-500 uppercase">Mãe: {{ pessoa.nome_mae or 'Não Informado' }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 max-w-xs text-sm text-slate-400 truncate">
+                            {{ pessoa.endereco or '---' }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {% if pessoa.antecedentes and pessoa.antecedentes|length > 0 %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900/30 text-red-400 border border-red-900/50">
+                                    Consta Registro
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-900/50">
+                                    Nada Consta
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 text-right">
+                            <!-- Botões de ação aqui -->
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-500">Nenhum registro encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Autos de Prisão em Flagrante{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-white">Autos de Prisão</h2>
+            <p class="text-slate-400 mt-1">Registro de flagrantes, capturas e mandados cumpridos.</p>
+        </div>
+        
+        <a href="{{ url_for('cadastrar_auto') }}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:shadow-red-500/20 transition-all transform hover:-translate-y-0.5 whitespace-nowrap">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Novo Auto de Prisão
+        </a>
+    </div>
+
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                
+                <thead>
+                    <tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase tracking-wider text-slate-400">
+                        <th class="px-6 py-4 font-semibold w-24">APFD Nº</th>
+                        <th class="px-6 py-4 font-semibold">Data / Hora</th>
+                        <th class="px-6 py-4 font-semibold">Indiciado / Preso</th>
+                        <th class="px-6 py-4 font-semibold">Descrição do Fato</th>
+                        <th class="px-6 py-4 font-semibold">Testemunhas</th>
+                        <th class="px-6 py-4 font-semibold">Condutor (Policial)</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-700">
+                    {% for auto in autos %}
+                    <tr class="hover:bg-slate-700/30 transition-colors group">
+                        
+                        <td class="px-6 py-4">
+                            <span class="font-mono text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded border border-red-400/20">
+                                #{{ '%04d' % auto.id }}
+                            </span>
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm text-white font-medium">{{ auto.horario.strftime('%d/%m/%Y') }}</span>
+                                <span class="text-xs text-slate-500 font-mono">{{ auto.horario.strftime('%H:%M') }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-slate-900 rounded-lg text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                </div>
+                                <span class="font-bold text-slate-200">{{ auto.preso }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 max-w-xs">
+                            <p class="text-sm text-slate-400 truncate" title="{{ auto.descricao_fato }}">
+                                {{ auto.descricao_fato }}
+                            </p>
+                        </td>
+
+                        <td class="px-6 py-4 text-sm text-slate-400">
+                            <div class="flex items-center gap-1">
+                                <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                {{ auto.testemunhas }}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="h-6 w-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 border border-slate-600">
+                                    {{ auto.policial_responsavel[:1] }}
+                                </div>
+                                <span class="text-xs text-slate-300 uppercase tracking-wide">{{ auto.policial_responsavel }}</span>
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="w-12 h-12 mb-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                <p class="text-lg font-medium">Nenhum auto de prisão registrado</p>
+                                <p class="text-sm">O sistema não possui registros de flagrantes no momento.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="bg-slate-900/50 px-6 py-3 border-t border-slate-700 flex items-center justify-between">
+            <span class="text-xs text-slate-500">Registros Totais: {{ autos|length }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

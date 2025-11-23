@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Item - Armaria{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-white">Cadastro de Apreensão / Item</h2>
+        <p class="text-slate-400 mt-1">Registre armas, entorpecentes, veículos ou patrimônio.</p>
+    </div>
+
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-xl">
+        <form method="POST" class="space-y-6">
+            
+            <!-- Acervo (Automático para Evidência se tiver vínculo) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Tipo de Acervo</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="acervo" value="Patrimonio" class="peer sr-only" {{ 'disabled' if pre_boletim_id or pre_auto_id else '' }}>
+                        <div class="p-4 bg-slate-900 border border-slate-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-500/10 text-center transition-all {{ 'opacity-50' if pre_boletim_id or pre_auto_id else '' }}">
+                            <span class="text-white font-bold">Patrimônio</span>
+                            <p class="text-xs text-slate-500 mt-1">Uso da corporação</p>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="acervo" value="Evidencia" class="peer sr-only" {{ 'checked' if pre_boletim_id or pre_auto_id else '' }}>
+                        <div class="p-4 bg-slate-900 border border-slate-600 rounded-lg peer-checked:border-red-500 peer-checked:bg-red-500/10 text-center transition-all">
+                            <span class="text-white font-bold">Evidência</span>
+                            <p class="text-xs text-slate-500 mt-1">Apreensão / Crime</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Detalhes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Tipo do Material</label>
+                    <select name="tipo" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                        <optgroup label="Armamento">
+                            <option value="Pistola">Pistola</option>
+                            <option value="Revolver">Revólver</option>
+                            <option value="Fuzil">Fuzil</option>
+                            <option value="Municao">Munição</option>
+                        </optgroup>
+                        <optgroup label="Ilicítos">
+                            <option value="Entorpecente">Entorpecente / Droga</option>
+                            <option value="Dinheiro">Dinheiro / Espécie</option>
+                            <option value="Outros">Outros Objetos</option>
+                        </optgroup>
+                        <optgroup label="Veículos">
+                            <option value="Veiculo">Carro / Moto</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Identificação / Serial</label>
+                    <input type="text" name="numero_serie" placeholder="Nº Série, Placa ou deixe em branco" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white font-mono">
+                    <p class="text-[10px] text-slate-500 mt-1">Para drogas, deixe em branco (será gerado código interno).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Descrição / Modelo</label>
+                    <input type="text" name="modelo" required placeholder="Ex: Cocaína, Taurus G2C, iPhone 13" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Marca / Detalhe</label>
+                    <input type="text" name="marca" placeholder="Ex: Pinos, Tabletes, Prata" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Qtd / Peso / Calibre</label>
+                    <input type="text" name="calibre" placeholder="Ex: 500g, .40, R$ 500,00" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                </div>
+            </div>
+
+            <!-- Vínculos Automáticos -->
+            {% if pre_boletim_id %}
+                <input type="hidden" name="boletim_id" value="{{ pre_boletim_id }}">
+                <div class="p-3 bg-blue-900/20 border border-blue-500/50 rounded-lg text-blue-200 text-sm text-center">
+                    Vinculando automaticamente ao <strong>B.O. #{{ pre_boletim_id }}</strong>
+                </div>
+            {% elif pre_auto_id %}
+                <input type="hidden" name="auto_prisao_id" value="{{ pre_auto_id }}">
+                <div class="p-3 bg-red-900/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+                    Vinculando automaticamente ao <strong>Auto #{{ pre_auto_id }}</strong>
+                </div>
+            {% else %}
+                <!-- Seleção Manual se não vier pré-preenchido -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Vincular a Boletim</label>
+                        <select name="boletim_id" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                            <option value="">Sem vínculo</option>
+                            {% for bo in boletins %}
+                                <option value="{{ bo.id }}">{{ bo.numero_formatado }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Vincular a Auto de Prisão</label>
+                        <select name="auto_prisao_id" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                            <option value="">Sem vínculo</option>
+                            {% for auto in autos %}
+                                <option value="{{ auto.id }}">Auto #{{ auto.id }} - {{ auto.preso }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
+                    Cadastrar Item
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Polícia Civil SP - Sistema Interno{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pc: {
+                            base: '#0f172a', /* Slate 900/950 - Fundo Escuro Profissional */
+                            card: '#1e293b', /* Slate 800 - Fundo dos Cartões */
+                            accent: '#3b82f6', /* Azul Royal */
+                            text: '#f8fafc', /* Branco Suave */
+                            muted: '#94a3b8' /* Cinza para textos secundários */
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://upload.wikimedia.org/wikipedia/commons/a/ad/Bras%C3%A3o_Nacional_PCSP.png" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Scrollbar personalizada escura */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+
+<body class="bg-pc-base text-pc-text antialiased flex flex-col min-h-screen selection:bg-pc-accent selection:text-white">
+
+    <nav class="fixed top-0 w-full z-50 border-b border-white/10 bg-pc-base/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <div class="flex items-center gap-4">
+                    <img class="h-12 w-auto drop-shadow-md" 
+                         src="https://upload.wikimedia.org/wikipedia/commons/a/ad/Bras%C3%A3o_Nacional_PCSP.png" 
+                         alt="Brasão Polícia Civil">
+                    <div class="hidden md:block">
+                        <h1 class="text-lg font-bold leading-tight tracking-wide text-white">POLÍCIA CIVIL</h1>
+                        <p class="text-xs text-pc-muted font-medium tracking-widest uppercase">Estado de São Paulo</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <a href="{{ url_for('dashboard') }}" class="text-sm font-medium text-white hover:text-pc-accent transition-colors">Início</a>
+                    <a href="{{ url_for('boletins') }}" class="text-sm font-medium text-pc-muted hover:text-white transition-colors">Relatórios</a>
+                    
+                    <a href="{{ url_for('logout') }}" class="bg-pc-card hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-semibold border border-white/10 transition-all">
+                        Sair
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="h-20"></div>
+
+    <main class="flex-grow container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                        {% if category == 'success' %}
+                            <div class="bg-green-500/10 border-l-4 border-green-500 text-green-200 p-4 rounded-r shadow-sm" role="alert">
+                        {% elif category == 'danger' or category == 'error' %}
+                            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-200 p-4 rounded-r shadow-sm" role="alert">
+                        {% else %}
+                            <div class="bg-blue-500/10 border-l-4 border-blue-500 text-blue-200 p-4 rounded-r shadow-sm" role="alert">
+                        {% endif %}
+                            <p class="font-medium">{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="animate-fade-in-up">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </main>
+
+    <footer class="border-t border-white/5 bg-pc-base mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 flex flex-col md:flex-row justify-between items-center text-sm text-pc-muted">
+            <p>&copy; 2025 Departamento de Inteligência - PCESP</p>
+            <p class="mt-2 md:mt-0">Desenvolvido por Bruno Stark</p>
+        </div>
+    </footer>
+
+</body>
+</html>
