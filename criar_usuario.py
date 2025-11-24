@@ -14,7 +14,7 @@ def criar_admin():
                 nome="Bruno Vitor", 
                 matricula="12345", 
                 senha=senha_hash, 
-                cargo="Delegado"
+                cargo="Delegado Geral"
             )
             db.session.add(usuario)
             db.session.commit()

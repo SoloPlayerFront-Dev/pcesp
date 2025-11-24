@@ -11,12 +11,22 @@
 
     <!-- Resumo do Item -->
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6 flex justify-between items-center">
-        <div>
-            <h3 class="text-white font-bold">{{ arma.tipo }} {{ arma.modelo }}</h3>
-            <p class="text-sm text-slate-400 font-mono">Série: {{ arma.numero_serie }}</p>
+        <div class="flex items-center gap-4">
+            <div class="p-3 bg-slate-700 rounded-lg">
+                {% if arma.tipo == 'Pistola' or arma.tipo == 'Revolver' %}
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                {% else %}
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                {% endif %}
+            </div>
+            <div>
+                <h3 class="text-white font-bold">{{ arma.tipo }} {{ arma.modelo }}</h3>
+                <p class="text-sm text-slate-400 font-mono">Série: {{ arma.numero_serie }}</p>
+            </div>
         </div>
-        <span class="px-3 py-1 rounded text-xs font-bold bg-slate-900 text-slate-300 border border-slate-700">
-            Atual: {{ arma.status }}
+        <span class="px-3 py-1 rounded text-xs font-bold border 
+            {{ 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' if arma.status == 'Disponivel' else 'bg-amber-500/10 text-amber-400 border-amber-500/20' }}">
+            {{ arma.status }}
         </span>
     </div>
 
@@ -26,38 +36,86 @@
             <!-- Tipo de Movimento -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Ação</label>
-                <select name="tipo_movimentacao" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                <select name="tipo_movimentacao" id="tipo_movimentacao" onchange="ajustarFormulario()" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
                     {% if arma.status == 'Disponivel' or arma.status == 'Custodia' %}
                         <option value="Retirada">Retirada / Cautela / Saída</option>
                     {% else %}
-                        <option value="Devolucao">Devolução / Retorno</option>
+                        <option value="Devolucao">Devolução / Retorno ao Armário</option>
                     {% endif %}
                 </select>
             </div>
 
-            <!-- Destinatário -->
-            <div>
+            <!-- Destinatário (Select Inteligente) -->
+            <div id="campo_destinatario">
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
-                    Destinatário / Responsável (Quem está pegando/devolvendo?)
+                    Destinatário / Responsável
                 </label>
-                <input type="text" name="destinatario" required placeholder="Nome do Oficial, Perito ou Setor" 
-                       class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
+                
+                <!-- Select de Oficiais -->
+                <div class="relative">
+                    <select name="destinatario_select" id="destinatario_select" onchange="toggleInputManual(this)" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white appearance-none focus:border-blue-500 focus:outline-none">
+                        <option value="" disabled selected>Selecione um oficial...</option>
+                        
+                        <optgroup label="Oficiais Cadastrados">
+                            {% for oficial in oficiais %}
+                            <option value="{{ oficial.nome }}">{{ oficial.nome }} ({{ oficial.matricula }})</option>
+                            {% endfor %}
+                        </optgroup>
+
+                        <optgroup label="Destinos Externos">
+                            <option value="OUTRO" class="text-amber-400 font-bold">Outro / Externo (Digitar manual)</option>
+                        </optgroup>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                </div>
+
+                <!-- Input Manual (Oculto inicialmente) -->
+                <div id="div_manual" class="hidden mt-3 animate-fade-in-down">
+                    <label class="block text-[10px] font-bold text-amber-400 uppercase mb-1">Especifique o Destino Externo</label>
+                    <input type="text" name="destinatario_manual" id="destinatario_manual" placeholder="Ex: Instituto de Criminalística, Manutenção, Destruição..." 
+                           class="w-full p-3 bg-slate-900 border border-amber-500/50 rounded-lg text-white focus:border-amber-500 focus:outline-none">
+                </div>
             </div>
 
             <!-- Observação -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Observações / Motivo</label>
-                <textarea name="observacao" rows="3" required placeholder="Ex: Cautela para plantão, Envio para perícia técnica..." 
-                          class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white"></textarea>
+                <textarea name="observacao" rows="3" required placeholder="Ex: Cautela para plantão noturno, Envio para perícia técnica..." 
+                          class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"></textarea>
             </div>
 
-            <div class="flex justify-between pt-4">
-                <a href="{{ url_for('armaria') }}" class="text-slate-400 hover:text-white py-3 px-4">Cancelar</a>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
+            <div class="flex justify-between pt-4 border-t border-slate-700">
+                <a href="{{ url_for('armaria') }}" class="text-slate-400 hover:text-white py-3 px-4 text-sm font-bold">Cancelar</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                     Confirmar Movimentação
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    function toggleInputManual(select) {
+        const manualDiv = document.getElementById('div_manual');
+        const manualInput = document.getElementById('destinatario_manual');
+        
+        if (select.value === 'OUTRO') {
+            manualDiv.classList.remove('hidden');
+            manualInput.required = true;
+            manualInput.focus();
+        } else {
+            manualDiv.classList.add('hidden');
+            manualInput.required = false;
+            manualInput.value = ''; // Limpa se esconder
+        }
+    }
+
+    function ajustarFormulario() {
+        const tipo = document.getElementById('tipo_movimentacao').value;
+        // Lógica adicional se necessária para devoluções futuras
+    }
+</script>
 {% endblock %}

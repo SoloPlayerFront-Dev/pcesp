@@ -26,7 +26,7 @@
                 <div class="md:col-span-1">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Foto Oficial</label>
                     <div class="bg-slate-900 p-4 rounded-lg border border-slate-600 text-center">
-                        {% if usuario and usuario.foto_perfil %}
+                        {% if usuario and usuario.foto_perfil and usuario.foto_perfil != 'default.jpg' %}
                             <img src="{{ url_for('static', filename='fotos_perfil/' + usuario.foto_perfil) }}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-slate-700 mb-4">
                         {% else %}
                             <div class="w-32 h-32 mx-auto rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center mb-4">
@@ -50,8 +50,16 @@
                             <input type="text" name="matricula" required value="{{ usuario.matricula if usuario else '' }}" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white font-mono focus:border-blue-500 focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Cargo Atual</label>
-                            <input type="text" name="cargo" required value="{{ usuario.cargo if usuario else '' }}" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Cargo / Patente</label>
+                            <!-- SELECT DE CARGOS (Atualizado para segurança) -->
+                            <select name="cargo_id" required class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none">
+                                <option value="" disabled {{ 'selected' if not usuario else '' }}>Selecione o cargo...</option>
+                                {% for cargo in cargos %}
+                                    <option value="{{ cargo.id }}" {{ 'selected' if usuario and usuario.cargo_id == cargo.id else '' }}>
+                                        {{ cargo.nome }} (Nível {{ cargo.nivel }})
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
 
@@ -80,7 +88,7 @@
             <!-- Observações -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Observações / Anotações</label>
-                <textarea name="observacoes" rows="3" placeholder="Notas administrativas..." class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-amber-500 focus:outline-none">{{ usuario.observacoes if usuario else '' }}</textarea>
+                <textarea name="observacoes" rows="3" placeholder="Notas administrativas sobre o servidor..." class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white focus:border-amber-500 focus:outline-none">{{ usuario.observacoes if usuario else '' }}</textarea>
             </div>
 
             <!-- Senha -->
@@ -93,7 +101,7 @@
 
             <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-700">
                 <a href="{{ url_for('gerenciar_membros') }}" class="text-sm font-medium text-slate-400 hover:text-white px-4 py-2">Cancelar</a>
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all transform hover:-translate-y-0.5">
                     {% if usuario %}Salvar Alterações{% else %}Cadastrar Policial{% endif %}
                 </button>
             </div>

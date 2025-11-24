@@ -28,13 +28,14 @@ def allowed_file(filename):
 db.init_app(app)
 
 # --- IMPORTAÇÃO DOS MODELOS ---
-from models.users import Usuario, Promocao
+from models.users import Usuario, Promocao, Cargo, Advertencia, LogAtividade
 from models.pessoas import Pessoa
 from models.boletins import Boletim, AnexoBoletim
 from models.auto_prisao import AutoPrisao
 from models.crimes import Crime
 from models.armas import Arma, MovimentacaoArma
 from models.acadepol import Comunicado
+from models.avisos import Aviso
 
 # --- HELPERS E DECORATORS ---
 from functools import wraps
@@ -52,24 +53,31 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# Injeta funções nos templates (ex: verificar permissão de chefe)
+def registrar_log(acao, alvo, detalhes=""):
+    user = current_user()
+    if user:
+        db.session.add(LogAtividade(autor_id=user.id, acao=acao, alvo=str(alvo), detalhes=detalhes))
+        db.session.commit()
+
+def pode_alterar_usuario(alvo_user):
+    me = current_user()
+    if not me: return False
+    if me.id == alvo_user.id: return True
+    return me.nivel_hierarquico > alvo_user.nivel_hierarquico
+
 @app.context_processor
 def inject_helpers():
-    def pode_gerenciar():
-        user = current_user()
-        # Exemplo simples: Apenas Delegados ou Admins podem gerenciar
-        if user and ('Delegado' in user.cargo or 'Chefe' in user.cargo or user.permissao == 'admin'):
-            return True
-        return False
-    return dict(pode_gerenciar=pode_gerenciar, current_user=current_user)
+    return dict(
+        pode_gerenciar=lambda: current_user() and current_user().nivel_hierarquico >= 80,
+        current_user=current_user, 
+        pode_alterar_usuario=pode_alterar_usuario
+    )
 
 # --- ROTAS DE AUTENTICAÇÃO ---
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    return redirect(url_for('dashboard')) if 'user_id' in session else redirect(url_for('login'))
 
 @app.route('/login', methods=['GET','POST'])
 def login():
@@ -77,6 +85,7 @@ def login():
         user = Usuario.query.filter_by(matricula=request.form['matricula']).first()
         if user and check_password_hash(user.senha, request.form['senha']):
             session['user_id'] = user.id
+            registrar_log('Login', 'Sistema', 'Acesso realizado')
             flash(f'Bem-vindo, {user.nome}.', 'success')
             return redirect(url_for('dashboard'))
         flash('Credenciais inválidas.', 'danger')
@@ -87,12 +96,56 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
-# --- DASHBOARD ---
+# --- DASHBOARD E AVISOS ---
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html', usuario=current_user())
+    # Busca avisos ordenados por data (mais recentes primeiro)
+    avisos = Aviso.query.order_by(Aviso.data_criacao.desc()).limit(10).all()
+    
+    # Dados para o resumo lateral (Contadores em Tempo Real)
+    contadores = {
+        'bo_pendentes': Boletim.query.filter_by(status='Pendente').count(),
+        # Conta tanto 'Em Uso' (Patrimônio) quanto 'Transito' (Evidência)
+        'armas_cautela': Arma.query.filter(Arma.status.in_(['Em Uso', 'Transito'])).count(),
+        'efetivo_ativo': Usuario.query.count()
+    }
+    
+    return render_template('dashboard.html', usuario=current_user(), avisos=avisos, contadores=contadores)
+
+@app.route('/dashboard/aviso/criar', methods=['POST'])
+@login_required
+def criar_aviso():
+    # Apenas chefia ou admin pode criar avisos (Nível >= 60)
+    if current_user().nivel_hierarquico < 60:
+        flash('Permissão insuficiente para publicar avisos.', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    novo_aviso = Aviso(
+        titulo=request.form['titulo'],
+        conteudo=request.form['conteudo'],
+        prioridade=request.form['prioridade'],
+        autor_id=current_user().id
+    )
+    db.session.add(novo_aviso)
+    db.session.commit()
+    registrar_log('Novo Aviso', novo_aviso.titulo, novo_aviso.prioridade)
+    flash('Aviso publicado no mural.', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/dashboard/aviso/excluir/<int:id>')
+@login_required
+def excluir_aviso(id):
+    aviso = Aviso.query.get_or_404(id)
+    # Apenas quem criou ou chefia pode apagar
+    if aviso.autor_id == current_user().id or current_user().nivel_hierarquico >= 80:
+        db.session.delete(aviso)
+        db.session.commit()
+        flash('Aviso removido.', 'success')
+    else:
+        flash('Sem permissão.', 'danger')
+    return redirect(url_for('dashboard'))
 
 # --- MÓDULO: PESSOAS ---
 
@@ -176,7 +229,6 @@ def cadastrar_boletim():
                 file.save(os.path.join(app.config['EVIDENCE_FOLDER'], filename))
                 arquivo_nome = filename
 
-        # Formatar Descrição com Natureza
         natureza = request.form.get('natureza_crime')
         desc_texto = request.form['descricao']
         descricao_final = f"[Natureza: {natureza}] \n{desc_texto}" if natureza else desc_texto
@@ -219,7 +271,6 @@ def editar_boletim(id):
         if 'status' in request.form:
             boletim.status = request.form['status']
         
-        # Atualizar Capa
         if 'evidencia' in request.files:
             file = request.files['evidencia']
             if file and file.filename != '' and allowed_file(file.filename):
@@ -247,7 +298,6 @@ def resolver_boletim(id):
     db.session.commit()
     return redirect(url_for('detalhes_boletim', id=id))
 
-# Rotas de Anexos Extras do B.O.
 @app.route('/boletins/anexar/<int:id>', methods=['POST'])
 @login_required
 def adicionar_anexo_boletim(id):
@@ -318,7 +368,6 @@ def editar_auto(id):
         auto.preso = request.form['preso']
         auto.descricao_fato = request.form['descricao']
         auto.testemunhas = request.form['testemunhas']
-        # Lógica simplificada para manter a natureza se não for alterada
         if request.form.get('natureza_crime'):
              auto.descricao_fato = f"[Natureza: {request.form.get('natureza_crime')}] \n{request.form['descricao']}"
         
@@ -340,17 +389,27 @@ def gerenciar_membros():
 def perfil_usuario(id):
     usuario = Usuario.query.get_or_404(id)
     promocoes = Promocao.query.filter_by(usuario_id=id).order_by(Promocao.data_promocao.desc()).all()
-    return render_template('perfil_usuario.html', usuario=usuario, promocoes=promocoes)
+    advertencias = Advertencia.query.filter_by(usuario_id=id).order_by(Advertencia.data_aplicacao.desc()).all()
+    cargos = Cargo.query.order_by(Cargo.nivel.desc()).all()
+    return render_template('perfil_usuario.html', usuario=usuario, promocoes=promocoes, advertencias=advertencias, cargos=cargos)
 
 @app.route('/membros/cadastrar', methods=['GET','POST'])
 @login_required
 def cadastrar_membros():
+    cargos = Cargo.query.order_by(Cargo.nivel.desc()).all()
     if request.method == 'POST':
+        cargo_id = int(request.form['cargo_id'])
+        cargo_selecionado = Cargo.query.get(cargo_id)
+        
+        if cargo_selecionado.nivel >= current_user().nivel_hierarquico:
+            flash('Você não tem permissão para cadastrar este nível de patente.', 'danger')
+            return render_template('cadastrar_membros.html', cargos=cargos)
+
         try:
             foto_filename = 'default.jpg'
             if 'foto_perfil' in request.files:
                 file = request.files['foto_perfil']
-                if file and file.filename != '' and allowed_file(file.filename):
+                if file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     foto_filename = filename
@@ -359,7 +418,7 @@ def cadastrar_membros():
                 nome=request.form['nome'], 
                 matricula=request.form['matricula'], 
                 senha=generate_password_hash(request.form['senha']), 
-                cargo=request.form['cargo'], 
+                cargo_id=cargo_id, 
                 foto_perfil=foto_filename, 
                 delegacia=request.form.get('delegacia'), 
                 departamento=request.form.get('departamento'), 
@@ -368,26 +427,45 @@ def cadastrar_membros():
             )
             db.session.add(u)
             db.session.commit()
+            registrar_log('Cadastro Membro', u.nome, f'Matrícula {u.matricula}')
             flash('Membro cadastrado.', 'success')
             return redirect(url_for('gerenciar_membros'))
-        except:
+        except Exception as e:
             db.session.rollback()
-            flash('Erro ao cadastrar (Matrícula duplicada?).', 'danger')
-    return render_template('cadastrar_membros.html')
+            flash(f'Erro ao cadastrar: {str(e)}', 'danger')
+            
+    return render_template('cadastrar_membros.html', cargos=cargos)
 
 @app.route('/membros/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_membro(id):
     usuario = Usuario.query.get_or_404(id)
+    cargos = Cargo.query.order_by(Cargo.nivel.desc()).all()
+
+    if not pode_alterar_usuario(usuario):
+        flash('Acesso negado. Você não pode modificar este perfil.', 'danger')
+        return redirect(url_for('perfil_usuario', id=id))
+
     if request.method == 'POST':
         usuario.nome = request.form['nome']
         usuario.matricula = request.form['matricula']
         
-        # Promoção Automática se cargo mudar
-        if request.form['cargo'] != usuario.cargo:
-            promocao = Promocao(usuario_id=usuario.id, cargo_anterior=usuario.cargo, novo_cargo=request.form['cargo'], motivo="Alteração Cadastral")
+        novo_cargo_id = int(request.form['cargo_id'])
+        if novo_cargo_id != usuario.cargo_id:
+            novo_cargo_obj = Cargo.query.get(novo_cargo_id)
+            
+            if novo_cargo_obj.nivel >= current_user().nivel_hierarquico:
+                flash('Permissão insuficiente para promover a este cargo.', 'danger')
+                return render_template('cadastrar_membros.html', usuario=usuario, cargos=cargos)
+
+            promocao = Promocao(
+                usuario_id=usuario.id, 
+                cargo_anterior=usuario.cargo, 
+                novo_cargo=novo_cargo_obj.nome, 
+                motivo="Alteração de Cadastro"
+            )
             db.session.add(promocao)
-            usuario.cargo = request.form['cargo']
+            usuario.cargo_id = novo_cargo_id
         
         usuario.delegacia = request.form['delegacia']
         usuario.departamento = request.form['departamento']
@@ -399,45 +477,110 @@ def editar_membro(id):
             
         if 'foto_perfil' in request.files:
             file = request.files['foto_perfil']
-            if file and file.filename != '' and allowed_file(file.filename):
+            if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 usuario.foto_perfil = filename
                 
         db.session.commit()
+        registrar_log('Edição de Perfil', usuario.nome)
         flash('Ficha atualizada.', 'success')
         return redirect(url_for('perfil_usuario', id=usuario.id))
             
-    return render_template('cadastrar_membros.html', usuario=usuario)
+    return render_template('cadastrar_membros.html', usuario=usuario, cargos=cargos)
 
 @app.route('/promover/<int:id>', methods=['POST'])
 @login_required
 def adicionar_promocao(id):
     usuario = Usuario.query.get_or_404(id)
-    novo = request.form['novo_cargo']
-    promo = Promocao(usuario_id=usuario.id, cargo_anterior=usuario.cargo, novo_cargo=novo, motivo=request.form['motivo'])
-    usuario.cargo = novo
+    if not pode_alterar_usuario(usuario):
+        flash('Sem permissão.', 'danger')
+        return redirect(url_for('perfil_usuario', id=id))
+
+    novo_cargo_id = int(request.form['novo_cargo_id'])
+    cargo_novo = Cargo.query.get(novo_cargo_id)
+    
+    if cargo_novo.nivel >= current_user().nivel_hierarquico:
+        flash('Você não pode promover para uma patente igual ou superior à sua.', 'danger')
+        return redirect(url_for('perfil_usuario', id=id))
+
+    promo = Promocao(
+        usuario_id=usuario.id, 
+        cargo_anterior=usuario.cargo, 
+        novo_cargo=cargo_novo.nome, 
+        motivo=request.form['motivo']
+    )
+    usuario.cargo_id = novo_cargo_id
+    
     db.session.add(promo)
     db.session.commit()
-    flash('Promoção registrada.', 'success')
+    registrar_log('Promoção Registrada', usuario.nome, cargo_novo.nome)
+    flash('Promoção registrada com sucesso.', 'success')
+    return redirect(url_for('perfil_usuario', id=id))
+
+@app.route('/advertir/<int:id>', methods=['POST'])
+@login_required
+def aplicar_advertencia(id):
+    usuario = Usuario.query.get_or_404(id)
+    if not pode_alterar_usuario(usuario):
+        flash('Sem permissão hierárquica.', 'danger')
+        return redirect(url_for('perfil_usuario', id=id))
+        
+    adv = Advertencia(
+        usuario_id=id,
+        autor_id=current_user().id,
+        tipo=request.form['tipo'],
+        descricao=request.form['descricao']
+    )
+    db.session.add(adv)
+    db.session.commit()
+    registrar_log('Aplicação de Advertência', usuario.nome, request.form['tipo'])
+    flash('Registro disciplinar adicionado.', 'warning')
     return redirect(url_for('perfil_usuario', id=id))
 
 @app.route('/membros/excluir/<int:id>')
 @login_required
 def excluir_membro(id):
     usuario = Usuario.query.get_or_404(id)
-    if usuario.id == current_user().id:
-        flash('Não pode excluir a si mesmo.', 'danger')
+    if usuario.id == current_user().id or not pode_alterar_usuario(usuario):
+        flash('Ação não permitida.', 'danger')
         return redirect(url_for('gerenciar_membros'))
-    try:
-        db.session.delete(usuario)
-        db.session.commit()
-        flash('Membro removido.', 'success')
-    except:
-        flash('Erro ao excluir.', 'danger')
+        
+    nome_removido = usuario.nome
+    db.session.delete(usuario)
+    db.session.commit()
+    registrar_log('Exclusão de Membro', nome_removido)
+    flash('Membro removido.', 'success')
     return redirect(url_for('gerenciar_membros'))
 
-# --- MÓDULO: ARMARIA E LOGÍSTICA ---
+# --- GESTÃO DE CARGOS ---
+
+@app.route('/cargos')
+@login_required
+def gerenciar_cargos():
+    if current_user().nivel_hierarquico < 80:
+        flash('Acesso restrito à chefia.', 'danger')
+        return redirect(url_for('dashboard'))
+    cargos = Cargo.query.order_by(Cargo.nivel.desc()).all()
+    return render_template('gerenciar_cargos.html', cargos=cargos)
+
+@app.route('/cargos/adicionar', methods=['POST'])
+@login_required
+def adicionar_cargo():
+    if current_user().nivel_hierarquico < 80:
+        return redirect(url_for('dashboard'))
+    
+    if Cargo.query.filter_by(nome=request.form['nome']).first():
+        flash('Cargo já existe.', 'danger')
+    else:
+        c = Cargo(nome=request.form['nome'], nivel=int(request.form['nivel']))
+        db.session.add(c)
+        db.session.commit()
+        registrar_log('Criar Cargo', c.nome)
+        flash('Cargo criado com sucesso.', 'success')
+    return redirect(url_for('gerenciar_cargos'))
+
+# --- MÓDULO: ARMARIA ---
 
 @app.route('/armaria')
 @login_required
@@ -469,8 +612,14 @@ def cadastrar_arma():
         try:
             db.session.add(nova_arma)
             db.session.commit()
-            # Log inicial
-            log = MovimentacaoArma(arma_id=nova_arma.id, usuario_responsavel_id=current_user().id, tipo_movimentacao='Entrada', destinatario='Estoque', observacao='Cadastro Inicial')
+            
+            log = MovimentacaoArma(
+                arma_id=nova_arma.id,
+                usuario_responsavel_id=current_user().id,
+                tipo_movimentacao='Entrada',
+                destinatario='Estoque',
+                observacao='Cadastro Inicial'
+            )
             db.session.add(log)
             db.session.commit()
             
@@ -491,10 +640,19 @@ def cadastrar_arma():
 @login_required
 def movimentar_arma(id):
     arma = Arma.query.get_or_404(id)
+    # Carrega todos os oficiais para o select
+    oficiais = Usuario.query.order_by(Usuario.nome).all()
+    
     if request.method == 'POST':
         tipo = request.form['tipo_movimentacao']
-        dest = request.form['destinatario']
         
+        # Lógica para pegar o destinatário correto
+        dest = request.form.get('destinatario_select')
+        if dest == 'OUTRO':
+            dest = request.form.get('destinatario_manual')
+        if not dest:
+            dest = request.form.get('destinatario') 
+
         if tipo == 'Retirada':
             arma.status = 'Em Uso' if arma.acervo == 'Patrimonio' else 'Transito'
             arma.localizacao_atual = dest
@@ -502,12 +660,19 @@ def movimentar_arma(id):
             arma.status = 'Disponivel' if arma.acervo == 'Patrimonio' else 'Custodia'
             arma.localizacao_atual = 'Armário Central'
             
-        log = MovimentacaoArma(arma_id=arma.id, usuario_responsavel_id=current_user().id, tipo_movimentacao=tipo, destinatario=dest, observacao=request.form['observacao'])
+        log = MovimentacaoArma(
+            arma_id=arma.id, 
+            usuario_responsavel_id=current_user().id, 
+            tipo_movimentacao=tipo, 
+            destinatario=dest, 
+            observacao=request.form['observacao']
+        )
         db.session.add(log)
         db.session.commit()
         flash('Movimentação registrada.', 'success')
         return redirect(url_for('armaria'))
-    return render_template('movimentar_arma.html', arma=arma)
+        
+    return render_template('movimentar_arma.html', arma=arma, oficiais=oficiais)
 
 @app.route('/armaria/historico/<int:id>')
 @login_required
@@ -528,6 +693,9 @@ def acadepol_publico():
 @app.route('/acadepol/admin')
 @login_required
 def acadepol_admin():
+    if current_user().nivel_hierarquico < 80:
+        flash('Acesso restrito.', 'danger')
+        return redirect(url_for('dashboard'))
     return render_template('acadepol_admin.html', comunicados=Comunicado.query.order_by(Comunicado.data_publicacao.desc()).all())
 
 @app.route('/acadepol/publicar', methods=['GET', 'POST'])
@@ -537,9 +705,8 @@ def acadepol_publicar():
         arquivo_nome = None
         if 'anexo' in request.files:
             file = request.files['anexo']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filename = f"acadepol_{datetime.now().timestamp()}_{filename}"
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"acad_{datetime.now().timestamp()}_{file.filename}")
                 file.save(os.path.join(app.config['EVIDENCE_FOLDER'], filename))
                 arquivo_nome = filename
 
@@ -552,7 +719,7 @@ def acadepol_publicar():
         )
         db.session.add(comunicado)
         db.session.commit()
-        flash('Publicado na ACADEPOL.', 'success')
+        flash('Publicado com sucesso.', 'success')
         return redirect(url_for('acadepol_admin'))
     return render_template('acadepol_form.html')
 
@@ -571,8 +738,37 @@ def acadepol_excluir(id):
 def baixar_evidencia(filename):
     return send_from_directory(app.config['EVIDENCE_FOLDER'], filename)
 
+# --- INICIALIZAÇÃO COM SEED ---
 if __name__ == '__main__':
     app.secret_key = Config.SECRET_KEY
     with app.app_context():
         db.create_all()
+        
+        if not Cargo.query.first():
+            cargos_iniciais = [
+                ('Delegado Geral', 100),
+                ('Delegado Titular', 90),
+                ('Delegado de Polícia', 80),
+                ('Investigador Chefe', 60),
+                ('Escrivão Chefe', 60),
+                ('Investigador', 40),
+                ('Escrivão', 40),
+                ('Agente Policial', 20),
+                ('Carcereiro', 20),
+                ('Administrativo', 10)
+            ]
+            for nome, nivel in cargos_iniciais:
+                db.session.add(Cargo(nome=nome, nivel=nivel))
+            db.session.commit()
+            
+            admin_cargo = Cargo.query.filter_by(nome='Delegado Geral').first()
+            if admin_cargo and not Usuario.query.filter_by(matricula='admin').first():
+                admin = Usuario(
+                    nome="Administrador Sistema", matricula="admin", senha=generate_password_hash("admin"), 
+                    cargo_id=admin_cargo.id, delegacia="DGP - Geral", departamento="Tecnologia da Informação"
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("--- SISTEMA INICIALIZADO: Login: admin | Senha: admin ---")
+
     app.run(debug=True)

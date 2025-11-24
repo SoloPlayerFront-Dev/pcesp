@@ -9,24 +9,45 @@
     <div class="flex justify-between items-center mb-6">
         <a href="{{ url_for('gerenciar_membros') }}" class="text-slate-400 hover:text-white flex items-center gap-2 text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Voltar para Lista
+            Voltar
         </a>
-        <a href="{{ url_for('editar_membro', id=usuario.id) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            Editar Dados
-        </a>
+        
+        <!-- Botões de Ação (Protegidos por Hierarquia) -->
+        {% if pode_alterar_usuario(usuario) %}
+        <div class="flex gap-2">
+            <!-- Botão Especial para Delegado Geral (Só aparece no próprio perfil) -->
+            {% if current_user().id == usuario.id and usuario.nivel_hierarquico >= 90 %}
+            <a href="{{ url_for('gerenciar_cargos') }}" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold shadow flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                Gerenciar Patentes
+            </a>
+            {% endif %}
+
+            <a href="{{ url_for('editar_membro', id=usuario.id) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Editar Dados
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <!-- Coluna Esquerda: Cartão de Identidade -->
+        <!-- COLUNA ESQUERDA: Cartão de Identidade -->
         <div class="space-y-6">
-            <!-- Card Principal -->
-            <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
+            <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl relative">
+                <!-- Capa / Fundo -->
                 <div class="h-32 bg-gradient-to-r from-slate-900 to-slate-800 relative">
+                    <!-- Badge de Nível -->
+                    <div class="absolute top-2 right-2">
+                        <span class="bg-black/50 text-white text-[10px] px-2 py-1 rounded font-mono border border-slate-600">
+                            Nível Hierárquico: {{ usuario.nivel_hierarquico }}
+                        </span>
+                    </div>
+                    <!-- Foto -->
                     <div class="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
-                        <div class="h-32 w-32 rounded-full border-4 border-slate-800 overflow-hidden bg-slate-700">
-                            {% if usuario.foto_perfil %}
+                        <div class="h-32 w-32 rounded-full border-4 border-slate-800 overflow-hidden bg-slate-700 shadow-lg">
+                            {% if usuario.foto_perfil and usuario.foto_perfil != 'default.jpg' %}
                                 <img src="{{ url_for('static', filename='fotos_perfil/' + usuario.foto_perfil) }}" class="w-full h-full object-cover">
                             {% else %}
                                 <div class="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-500">
@@ -36,93 +57,155 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Informações Principais -->
                 <div class="pt-20 pb-8 px-6 text-center">
                     <h1 class="text-2xl font-bold text-white">{{ usuario.nome }}</h1>
-                    <p class="text-emerald-400 font-medium uppercase tracking-wide text-sm mt-1">{{ usuario.cargo }}</p>
-                    <p class="text-slate-500 text-xs mt-2 font-mono">MATRÍCULA: {{ usuario.matricula }}</p>
+                    <p class="text-emerald-400 font-bold uppercase tracking-wide text-sm mt-1">{{ usuario.cargo }}</p>
+                    <p class="text-slate-500 text-xs mt-2 font-mono bg-slate-900/50 inline-block px-3 py-1 rounded-full border border-slate-700">
+                        MATRÍCULA: {{ usuario.matricula }}
+                    </p>
                     
                     <div class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-700 pt-6">
                         <div>
-                            <p class="text-xs text-slate-500 uppercase">Delegacia</p>
-                            <p class="text-white text-sm font-semibold">{{ usuario.delegacia or 'Não lotado' }}</p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Delegacia</p>
+                            <p class="text-white text-sm font-semibold truncate">{{ usuario.delegacia or 'Não lotado' }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-slate-500 uppercase">Departamento</p>
-                            <p class="text-white text-sm font-semibold">{{ usuario.departamento or 'Geral' }}</p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Departamento</p>
+                            <p class="text-white text-sm font-semibold truncate">{{ usuario.departamento or 'Geral' }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Dados Pessoais (Restrito) -->
+            <!-- Dados Pessoais (Visualização) -->
             <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.622-1 2.241M13 3.414l.001-.002"></path></svg>
-                    Dados Pessoais
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.622-1 2.241M13 3.414l.001-.002"></path></svg>
+                    Dados Cadastrais
                 </h3>
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <div>
-                        <p class="text-xs text-slate-500 uppercase">Endereço Residencial</p>
-                        <p class="text-slate-300 text-sm">{{ usuario.endereco or 'Não informado' }}</p>
+                        <p class="text-xs text-slate-500 uppercase font-bold">Endereço Residencial</p>
+                        <p class="text-slate-300 text-sm bg-slate-900/50 p-2 rounded border border-slate-700/50 mt-1">
+                            {{ usuario.endereco or 'Não informado' }}
+                        </p>
                     </div>
                     <div>
-                        <p class="text-xs text-slate-500 uppercase">Data de Cadastro</p>
-                        <p class="text-slate-300 text-sm">{{ usuario.criado_em.strftime('%d/%m/%Y') }}</p>
+                        <p class="text-xs text-slate-500 uppercase font-bold">Data de Admissão</p>
+                        <p class="text-slate-300 text-sm flex items-center gap-2 mt-1">
+                            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            {{ usuario.criado_em.strftime('%d/%m/%Y') }}
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Coluna Direita: Histórico e Notas -->
-        <div class="lg:col-span-2 space-y-8">
+        <!-- Coluna Direita: Abas de Histórico -->
+        <div class="lg:col-span-2">
             
-            <!-- Seção de Observações -->
-            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    Observações Administrativas
-                </h3>
-                <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 min-h-[100px]">
-                    <p class="text-slate-300 text-sm italic whitespace-pre-line">{{ usuario.observacoes or 'Nenhuma observação registrada na ficha funcional.' }}</p>
+            <!-- Navegação de Abas -->
+            <div class="mb-6 border-b border-slate-700 flex gap-6">
+                <button onclick="openTab('carreira')" id="btn-carreira" class="pb-2 text-sm font-bold text-emerald-400 border-b-2 border-emerald-400 hover:text-emerald-300 transition-colors focus:outline-none">
+                    Carreira & Promoções
+                </button>
+                <button onclick="openTab('disciplinar')" id="btn-disciplinar" class="pb-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-red-400 hover:border-red-400 transition-all focus:outline-none">
+                    Registro Disciplinar
+                </button>
+            </div>
+
+            <!-- CONTEÚDO: Carreira -->
+            <div id="tab-carreira" class="space-y-6 animate-fade-in">
+                
+                <!-- Observações -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Anotações Funcionais
+                    </h3>
+                    <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 min-h-[80px]">
+                        <p class="text-slate-300 text-sm italic whitespace-pre-line leading-relaxed">{{ usuario.observacoes or 'Sem observações registradas na ficha.' }}</p>
+                    </div>
+                </div>
+
+                <!-- Timeline de Promoções -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                    <div class="flex justify-between items-center mb-8">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            Linha do Tempo
+                        </h3>
+                        
+                        <!-- Botão Promoção (Só para chefia) -->
+                        {% if pode_alterar_usuario(usuario) %}
+                        <button onclick="document.getElementById('modalPromocao').classList.remove('hidden')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded transition-colors shadow-lg">
+                            + Registrar Evento
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="border-l-2 border-slate-700 ml-3 space-y-8 pb-2">
+                        {% for promo in promocoes %}
+                        <div class="relative pl-8 group">
+                            <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-emerald-500 border-4 border-slate-800 group-hover:bg-emerald-400 transition-colors"></span>
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start bg-slate-800/30 p-3 rounded-lg border border-transparent hover:border-slate-700 transition-all">
+                                <div>
+                                    <h4 class="text-white font-bold text-base">{{ promo.novo_cargo }}</h4>
+                                    <p class="text-slate-400 text-xs">Anterior: <span class="text-slate-500">{{ promo.cargo_anterior }}</span></p>
+                                    <p class="text-emerald-400/90 text-xs mt-1 uppercase tracking-wide font-bold">{{ promo.motivo }}</p>
+                                </div>
+                                <span class="text-xs text-slate-500 font-mono mt-1 sm:mt-0">{{ promo.data_promocao.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="pl-8 text-slate-500 text-sm italic">Nenhum registro de alteração de cargo.</div>
+                        {% endfor %}
+                        
+                        <!-- Início -->
+                        <div class="relative pl-8">
+                            <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-slate-600 border-4 border-slate-800"></span>
+                            <h4 class="text-slate-400 font-bold text-sm">Admissão na Corporação</h4>
+                            <span class="text-xs text-slate-600 font-mono">{{ usuario.criado_em.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Histórico de Promoções (Timeline) -->
-            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Registro de Promoções
-                    </h3>
-                    
-                    <!-- Botão Modal para Promover -->
-                    <button onclick="document.getElementById('modalPromocao').classList.remove('hidden')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded transition-colors">
-                        Registrar Promoção
-                    </button>
-                </div>
-
-                <div class="border-l-2 border-slate-700 ml-3 space-y-8">
-                    {% for promo in promocoes %}
-                    <div class="relative pl-8">
-                        <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-emerald-500 border-4 border-slate-800"></span>
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                            <div>
-                                <h4 class="text-white font-bold text-lg">{{ promo.novo_cargo }}</h4>
-                                <p class="text-slate-400 text-sm">Cargo anterior: {{ promo.cargo_anterior }}</p>
-                                <p class="text-emerald-400/80 text-xs mt-1 uppercase tracking-wide">{{ promo.motivo }}</p>
-                            </div>
-                            <span class="text-xs text-slate-500 font-mono mt-1 sm:mt-0">{{ promo.data_promocao.strftime('%d/%m/%Y') }}</span>
-                        </div>
+            <!-- CONTEÚDO: Disciplinar -->
+            <div id="tab-disciplinar" class="hidden space-y-6 animate-fade-in">
+                <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2 text-red-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Advertências e Punições
+                        </h3>
+                        
+                        <!-- Só chefia pode punir (não pode punir a si mesmo) -->
+                        {% if pode_alterar_usuario(usuario) and usuario.id != current_user().id %}
+                        <button onclick="document.getElementById('modalAdvertencia').classList.remove('hidden')" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded shadow-lg">
+                            Nova Ocorrência
+                        </button>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="pl-8 text-slate-500 text-sm">Nenhum histórico de promoção registrado.</div>
-                    {% endfor %}
-                    
-                    <!-- Marcador de Início -->
-                    <div class="relative pl-8">
-                        <span class="absolute -left-[9px] top-1 h-4 w-4 rounded-full bg-slate-600 border-4 border-slate-800"></span>
-                        <h4 class="text-slate-400 font-bold">Admissão na Corporação</h4>
-                        <span class="text-xs text-slate-600 font-mono">{{ usuario.criado_em.strftime('%d/%m/%Y') }}</span>
+
+                    <div class="space-y-4">
+                        {% for adv in advertencias %}
+                        <div class="bg-red-900/10 border border-red-500/30 rounded-lg p-4 hover:bg-red-900/20 transition-colors">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-red-400 font-bold uppercase text-xs bg-red-900/40 px-2 py-1 rounded border border-red-500/20">{{ adv.tipo }}</span>
+                                <span class="text-slate-500 text-xs font-mono">{{ adv.data_aplicacao.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                            <p class="text-slate-300 text-sm leading-relaxed">{{ adv.descricao }}</p>
+                            <p class="text-[10px] text-slate-600 mt-2 text-right">Registrado por ID #{{ adv.autor_id }}</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8 border border-dashed border-slate-700 rounded-lg">
+                            <p class="text-slate-500">Ficha disciplinar limpa.</p>
+                            <p class="text-slate-600 text-xs mt-1">Nenhuma ocorrência registrada.</p>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -131,31 +214,86 @@
     </div>
 </div>
 
-<!-- Modal de Promoção -->
+<!-- Modal Promoção (CORRIGIDO: USA novo_cargo_id NO SELECT) -->
 <div id="modalPromocao" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 backdrop-blur-sm">
-    <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-2xl">
-        <h3 class="text-xl font-bold text-white mb-4">Registrar Nova Patente</h3>
+    <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-2xl transform transition-all scale-100">
+        <h3 class="text-xl font-bold text-white mb-4">Registrar Evento de Carreira</h3>
         <form action="{{ url_for('adicionar_promocao', id=usuario.id) }}" method="POST">
             <div class="space-y-4">
+                <!-- SELECT DE NOVO CARGO (CORRIGIDO) -->
                 <div>
-                    <label class="block text-xs text-slate-400 uppercase mb-1">Novo Cargo</label>
-                    <input type="text" name="novo_cargo" required class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                    <label class="block text-xs text-slate-400 uppercase mb-1">Novo Cargo / Designação</label>
+                    <select name="novo_cargo_id" required class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:border-emerald-500 focus:outline-none">
+                        {% for cargo in cargos %}
+                            <option value="{{ cargo.id }}">{{ cargo.nome }} (Nível {{ cargo.nivel }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[10px] text-slate-500 mt-1">Isso alterará oficialmente a patente do servidor.</p>
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 uppercase mb-1">Motivo / Tipo</label>
-                    <select name="motivo" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                    <select name="motivo" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:border-emerald-500 focus:outline-none">
                         <option value="Promoção por Merecimento">Promoção por Merecimento</option>
                         <option value="Promoção por Antiguidade">Promoção por Antiguidade</option>
                         <option value="Nomeação de Chefia">Nomeação de Chefia</option>
                         <option value="Correção Funcional">Correção Funcional</option>
+                        <option value="Transferência">Transferência</option>
                     </select>
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" onclick="document.getElementById('modalPromocao').classList.add('hidden')" class="text-slate-400 hover:text-white px-4 py-2">Cancelar</button>
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded">Confirmar</button>
+                <button type="button" onclick="document.getElementById('modalPromocao').classList.add('hidden')" class="text-slate-400 hover:text-white px-4 py-2 text-sm">Cancelar</button>
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-sm shadow-lg">Confirmar</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Modal Advertência -->
+<div id="modalAdvertencia" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4 text-red-400">Registrar Ocorrência Disciplinar</h3>
+        <form action="{{ url_for('aplicar_advertencia', id=usuario.id) }}" method="POST">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 uppercase mb-1">Tipo de Sanção</label>
+                    <select name="tipo" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:border-red-500 focus:outline-none">
+                        <option value="Advertência Verbal">Advertência Verbal</option>
+                        <option value="Advertência Escrita">Advertência Escrita</option>
+                        <option value="Suspensão">Suspensão</option>
+                        <option value="Sindicância Interna">Sindicância Interna</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 uppercase mb-1">Descrição do Fato</label>
+                    <textarea name="descricao" rows="4" required placeholder="Descreva o motivo, data do ocorrido e fundamentação..." class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:border-red-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('modalAdvertencia').classList.add('hidden')" class="text-slate-400 hover:text-white px-4 py-2 text-sm">Cancelar</button>
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-sm shadow-lg">Registrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openTab(tabName) {
+        document.getElementById('tab-carreira').classList.add('hidden');
+        document.getElementById('tab-disciplinar').classList.add('hidden');
+        const btnCarreira = document.getElementById('btn-carreira');
+        const btnDisciplinar = document.getElementById('btn-disciplinar');
+        
+        btnCarreira.className = "pb-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-emerald-400 hover:border-emerald-400 transition-all focus:outline-none";
+        btnDisciplinar.className = "pb-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-red-400 hover:border-red-400 transition-all focus:outline-none";
+
+        document.getElementById('tab-' + tabName).classList.remove('hidden');
+        
+        if (tabName === 'carreira') {
+            btnCarreira.className = "pb-2 text-sm font-bold text-emerald-400 border-b-2 border-emerald-400 hover:text-emerald-300 transition-colors focus:outline-none";
+        } else {
+            btnDisciplinar.className = "pb-2 text-sm font-bold text-red-400 border-b-2 border-red-400 hover:text-red-300 transition-colors focus:outline-none";
+        }
+    }
+</script>
 {% endblock %}
